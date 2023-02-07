@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { PostDetail } from "./PostDetail";
 const maxPostPage = 10;
@@ -15,12 +15,22 @@ export function Posts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPost, setSelectedPost] = useState(null);
 
-  // replace with useQuery
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (currentPage < maxPostPage) {
+      const nextPage = currentPage + 1;
+
+      queryClient.prefetchQuery(["posts", nextPage], () => fetchPosts(nextPage));
+    }
+  }, [currentPage, queryClient]);
+
   const { data, isError, error, isLoading } = useQuery(
     ["posts", currentPage],
     () => fetchPosts(currentPage),
     {
       staleTime: 2000,
+      keepPreviousData: true,
     }
   );
 
@@ -33,17 +43,13 @@ export function Posts() {
       <ul>
         {data.map((post) => (
           <>
-            <li
-              key={post.id}
-              className="post-title"
-              onClick={() => setSelectedPost(post)}
-            >
+            <li key={post.id} className='post-title' onClick={() => setSelectedPost(post)}>
               {post.title}
             </li>
           </>
         ))}
       </ul>
-      <div className="pages">
+      <div className='pages'>
         <button
           disabled={currentPage <= 1}
           onClick={() => {
